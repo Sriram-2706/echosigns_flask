@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid md:grid-cols-2 gap-8 items-center">
+  <div>
+    <h1 class="text-3xl font-semibold mb-3">Audio/Text to ISL</h1>
+    <p class="text-slate-300">Convert English/Hindi text or speech into Indian Sign Language using a local pipeline. Log in to access the converter and dashboard.</p>
+    <div class="mt-6 flex gap-3">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('converter_page') }}" class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500">Open Converter</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700">Sign Up</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <h2 class="text-xl font-medium mb-4">How it works</h2>
+    <ol class="list-decimal list-inside text-slate-300 space-y-1">
+      <li>Type or speak (EN/HI)</li>
+      <li>Local NLP extracts key tokens & phrases</li>
+      <li>Tokens map to ISL videos from your dataset</li>
+      <li>Playlist plays sequentially in the browser</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto py-10">
+  <h2 class="text-2xl font-bold text-yellow-400 mb-6">Your Dashboard</h2>
+
+  {% if history and history|length > 0 %}
+    <div class="overflow-x-auto shadow rounded-lg bg-gray-800">
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-gray-700 text-gray-200">
+          <tr>
+            <th class="px-4 py-3">#</th>
+            <th class="px-4 py-3">Input Text</th>
+            <th class="px-4 py-3">Language</th>
+            <th class="px-4 py-3">Generated ISL Videos</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700">
+          {% for item in history %}
+          <tr class="hover:bg-gray-700">
+            <td class="px-4 py-3">{{ loop.index }}</td>
+            <td class="px-4 py-3">{{ item.input_text }}</td>
+            <td class="px-4 py-3 uppercase">{{ item.lang }}</td>
+            <td class="px-4 py-3">
+              {% for f in item.output_videos.split('|') %}
+                <video src="{{ url_for('static', filename='isl_videos/' ~ f) }}" class="inline-block w-20 h-20 border rounded" controls></video>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-gray-400">No history found yet. Try converting some text or speech!</p>
+  {% endif %}
+</div>
+{% endblock %}

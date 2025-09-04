@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto py-10">
+  <h2 class="text-2xl font-bold text-yellow-400 mb-6">Text / Speech → ISL Animation</h2>
+
+  <!-- Input Form -->
+  <form method="POST" enctype="multipart/form-data" class="space-y-6 bg-gray-800 p-6 rounded-lg shadow">
+    <div>
+      <label class="block text-gray-300 mb-2">Mode</label>
+      <select name="mode" class="w-full p-2 rounded bg-gray-700 text-gray-200">
+        <option value="text">Text</option>
+        <option value="speech">Speech</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-gray-300 mb-2">Language</label>
+      <select name="lang" class="w-full p-2 rounded bg-gray-700 text-gray-200">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+      </select>
+    </div>
+
+    <div id="text-input">
+      <label class="block text-gray-300 mb-2">Enter Text</label>
+      <textarea name="sen" rows="3" class="w-full p-3 rounded bg-gray-700 text-gray-200" placeholder="Type your sentence here..."></textarea>
+    </div>
+
+    <div id="speech-input" class="hidden">
+      <label class="block text-gray-300 mb-2">Upload Speech File</label>
+      <input type="file" name="audio" accept=".wav,.flac,.aiff" class="block w-full text-gray-300">
+    </div>
+
+    <button type="submit" class="w-full py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg">
+      Convert
+    </button>
+  </form>
+
+  <!-- Results -->
+  {% if text %}
+  <div class="mt-8 bg-gray-900 p-6 rounded-lg shadow">
+    <h3 class="text-xl font-semibold text-yellow-400 mb-3">Recognized Text:</h3>
+    <p class="text-gray-200">{{ text }}</p>
+  </div>
+  {% endif %}
+
+  {% if words %}
+  <div class="mt-8">
+    <h3 class="text-xl font-semibold text-yellow-400 mb-3">Matched Keywords:</h3>
+    <ul class="list-disc list-inside text-gray-200">
+      {% for w in words %}
+      <li>{{ w }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if files %}
+  <div class="mt-8">
+    <h3 class="text-xl font-semibold text-yellow-400 mb-3">ISL Animation:</h3>
+    <div class="flex flex-wrap gap-4">
+      {% for f in files %}
+      <video src="{{ url_for('static', filename='isl_videos/' ~ f) }}" controls class="w-32 h-32 border rounded"></video>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  // Toggle fields based on mode
+  const modeSelect = document.querySelector("select[name='mode']");
+  const textInput = document.getElementById("text-input");
+  const speechInput = document.getElementById("speech-input");
+
+  modeSelect.addEventListener("change", function() {
+    if (this.value === "text") {
+      textInput.classList.remove("hidden");
+      speechInput.classList.add("hidden");
+    } else {
+      textInput.classList.add("hidden");
+      speechInput.classList.remove("hidden");
+    }
+  });
+</script>
+{% endblock %}

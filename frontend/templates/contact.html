@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-2xl font-semibold mb-4">Contact</h2>
+<form method="post" class="max-w-lg space-y-4">
+  <div>
+    <label class="block text-sm mb-1">Name</label>
+    <input name="name" class="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2" required>
+  </div>
+  <div>
+    <label class="block text-sm mb-1">Email</label>
+    <input name="email" type="email" class="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2" required>
+  </div>
+  <div>
+    <label class="block text-sm mb-1">Message</label>
+    <textarea name="message" rows="4" class="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2" required></textarea>
+  </div>
+  <button class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500">Send</button>
+</form>
+{% endblock %}
