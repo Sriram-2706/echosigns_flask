@@ -4,10 +4,10 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_required, current_user
 from werkzeug.utils import secure_filename
 
-from .auth import auth_bp
-from .database import db, User, History, ContactMessage
-from .models.text2isl import Text2ISL
-from .models.asr import asr_file_vosk, VOSK_OK
+from auth import auth_bp
+from database import db, User, History, ContactMessage
+from models.text2isl import Text2ISL
+from models.asr import asr_file_vosk, VOSK_OK
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)

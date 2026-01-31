@@ -1,86 +1,298 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto py-10">
-  <h2 class="text-2xl font-bold text-yellow-400 mb-6">Text / Speech → ISL Animation</h2>
-
-  <!-- Input Form -->
-  <form method="POST" enctype="multipart/form-data" class="space-y-6 bg-gray-800 p-6 rounded-lg shadow">
-    <div>
-      <label class="block text-gray-300 mb-2">Mode</label>
-      <select name="mode" class="w-full p-2 rounded bg-gray-700 text-gray-200">
-        <option value="text">Text</option>
-        <option value="speech">Speech</option>
-      </select>
-    </div>
-
-    <div>
-      <label class="block text-gray-300 mb-2">Language</label>
-      <select name="lang" class="w-full p-2 rounded bg-gray-700 text-gray-200">
-        <option value="en">English</option>
-        <option value="hi">Hindi</option>
-      </select>
-    </div>
-
-    <div id="text-input">
-      <label class="block text-gray-300 mb-2">Enter Text</label>
-      <textarea name="sen" rows="3" class="w-full p-3 rounded bg-gray-700 text-gray-200" placeholder="Type your sentence here..."></textarea>
-    </div>
-
-    <div id="speech-input" class="hidden">
-      <label class="block text-gray-300 mb-2">Upload Speech File</label>
-      <input type="file" name="audio" accept=".wav,.flac,.aiff" class="block w-full text-gray-300">
-    </div>
-
-    <button type="submit" class="w-full py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg">
-      Convert
-    </button>
-  </form>
-
-  <!-- Results -->
-  {% if text %}
-  <div class="mt-8 bg-gray-900 p-6 rounded-lg shadow">
-    <h3 class="text-xl font-semibold text-yellow-400 mb-3">Recognized Text:</h3>
-    <p class="text-gray-200">{{ text }}</p>
+<div class="max-w-7xl mx-auto py-6 px-4">
+  <!-- Top Nav / Header Area -->
+  <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+    <h2 class="text-2xl font-bold text-yellow-400">Audio/Text to ISL Converter</h2>
   </div>
-  {% endif %}
 
-  {% if words %}
-  <div class="mt-8">
-    <h3 class="text-xl font-semibold text-yellow-400 mb-3">Matched Keywords:</h3>
-    <ul class="list-disc list-inside text-gray-200">
-      {% for w in words %}
-      <li>{{ w }}</li>
-      {% endfor %}
-    </ul>
+  <!-- Hidden Data Container to pass Jinja variables to JS safely -->
+  <div id="page-data" data-playlist='{{ files | tojson | default("[]") }}'
+    data-tokens='{{ words | tojson | default("[]") }}' class="hidden">
   </div>
-  {% endif %}
 
-  {% if files %}
-  <div class="mt-8">
-    <h3 class="text-xl font-semibold text-yellow-400 mb-3">ISL Animation:</h3>
-    <div class="flex flex-wrap gap-4">
-      {% for f in files %}
-      <video src="{{ url_for('static', filename='isl_videos/' ~ f) }}" controls class="w-32 h-32 border rounded"></video>
-      {% endfor %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-200px)]">
+
+    <!-- LEFT COLUMN: Input & Token List -->
+    <div class="flex flex-col gap-6 border-r border-gray-700 pr-6 overflow-y-auto">
+
+      <!-- Input Form -->
+      <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-300 mb-4">Enter Text or Use Mic</h3>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+          <div class="flex gap-4 mb-2">
+            <label class="inline-flex items-center text-gray-300">
+              <input type="radio" name="mode" value="text" class="form-radio text-yellow-500" {% if not
+                request.form.get('mode') or request.form.get('mode')=='text' %}checked{% endif %}
+                onchange="toggleMode('text')">
+              <span class="ml-2">Text</span>
+            </label>
+            <label class="inline-flex items-center text-gray-300">
+              <input type="radio" name="mode" value="speech_upload" class="form-radio text-yellow-500" {% if
+                request.form.get('mode')=='speech_upload' %}checked{% endif %} onchange="toggleMode('speech')">
+              <span class="ml-2">Speech File</span>
+            </label>
+          </div>
+
+          <!-- Text Input -->
+          <div id="text-input" class="{% if request.form.get('mode') == 'speech_upload' %}hidden{% endif %}">
+            <div class="flex gap-2">
+              <input type="text" name="sen" value="{{ text if text else '' }}"
+                class="flex-1 p-3 rounded bg-gray-700 text-white border border-gray-600 focus:border-yellow-500 focus:outline-none"
+                placeholder="Type your sentence here...">
+              <button type="button" class="p-3 bg-gray-700 rounded text-yellow-400 hover:bg-gray-600"
+                title="Mic Input (Not Implemented)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Speech Input -->
+          <div id="speech-input"
+            class="{% if not request.form.get('mode') or request.form.get('mode') == 'text' %}hidden{% endif %}">
+            <input type="file" name="audio_file" accept=".wav,.mp3,.ogg,.webm"
+              class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-black hover:file:bg-yellow-600" />
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit"
+              class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded shadow transition">Submit</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Token Display -->
+      {% if words %}
+      <div class="flex-1">
+        <p class="text-gray-400 mb-2">The text that you entered is: <span class="text-white italic">"{{ text }}"</span>
+        </p>
+
+        <div class="mt-4 pl-8 border-l-2 border-gray-700">
+          <h4 class="text-yellow-500 font-semibold mb-4">Key words in sentence:</h4>
+          <ul class="space-y-2" id="token-list">
+            {% for w in words %}
+            <li class="token-item text-gray-300 text-lg transition-all duration-200" data-index="{{ loop.index0 }}">
+              <span class="inline-block w-2 h-2 rounded-full bg-gray-600 mr-3 dot"></span>
+              {{ w }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+
     </div>
+
+    <!-- RIGHT COLUMN: Animation Player -->
+    <div class="flex flex-col items-center justify-center bg-gray-900 rounded-2xl border border-gray-800 p-8 relative">
+      <h3 class="text-xl font-semibold text-yellow-500 mb-6 absolute top-6">Sign Language Animation</h3>
+
+      {% if files %}
+      <div
+        class="relative w-full max-w-lg aspect-video bg-black rounded-lg overflow-hidden shadow-2xl border border-gray-700">
+        <video id="main-video" class="w-full h-full object-contain" playsinline>
+          <source src="" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+
+        <!-- Overlay Controls -->
+        <div class="absolute bottom-4 left-4">
+          <button id="play-btn"
+            class="px-4 py-2 bg-yellow-500 text-black font-bold rounded hover:bg-yellow-400 transition flex items-center gap-2">
+            <span id="play-icon">▶</span> <span id="play-text">Play</span>
+          </button>
+        </div>
+      </div>
+      <p id="video-status" class="text-gray-500 mt-4 text-sm">Ready to play</p>
+      {% else %}
+      <div class="text-center text-gray-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto mb-4 opacity-20" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p>Enter text to generate animation</p>
+      </div>
+      {% endif %}
+    </div>
+
   </div>
-  {% endif %}
 </div>
 
 <script>
-  // Toggle fields based on mode
-  const modeSelect = document.querySelector("select[name='mode']");
-  const textInput = document.getElementById("text-input");
-  const speechInput = document.getElementById("speech-input");
-
-  modeSelect.addEventListener("change", function() {
-    if (this.value === "text") {
-      textInput.classList.remove("hidden");
-      speechInput.classList.add("hidden");
+  function toggleMode(mode) {
+    const textInput = document.getElementById('text-input');
+    const speechInput = document.getElementById('speech-input');
+    if (mode === 'text') {
+      textInput.classList.remove('hidden');
+      speechInput.classList.add('hidden');
     } else {
-      textInput.classList.add("hidden");
-      speechInput.classList.remove("hidden");
+      textInput.classList.add('hidden');
+      speechInput.classList.remove('hidden');
     }
-  });
+  }
+
+  // Read data from hidden element to avoid IDE syntax errors with Jinja
+  const pageData = document.getElementById('page-data');
+  const playlist = JSON.parse(pageData.dataset.playlist || '[]');
+  const tokens = JSON.parse(pageData.dataset.tokens || '[]');
+
+  const videoPlayer = document.getElementById('main-video');
+  const playBtn = document.getElementById('play-btn');
+  const playText = document.getElementById('play-text');
+  const statusText = document.getElementById('video-status');
+  const tokenItems = document.querySelectorAll('.token-item');
+
+  // --- Live Mic Logic ---
+  const micBtn = document.querySelector('button[title="Mic Input (Not Implemented)"]');
+  const micIcon = micBtn ? micBtn.querySelector('svg') : null;
+  let mediaRecorder = null;
+  let recId = null;
+  let isRecording = false;
+
+  if (micBtn) {
+    micBtn.title = "Start Live Recording"; // Update title
+    micBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        // Start recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+          // 1. Start session
+          const startRes = await fetch('/api/asr/live/start', { method: 'POST' });
+          const startData = await startRes.json();
+          recId = startData.rec_id;
+
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+          mediaRecorder.ondataavailable = async (e) => {
+            if (e.data.size > 0 && recId) {
+              await fetch(`/api/asr/live/append/${recId}`, {
+                method: 'POST',
+                body: e.data
+              });
+            }
+          };
+
+          mediaRecorder.start(1000); // chunk every 1s
+          isRecording = true;
+
+          // UI updates
+          micBtn.classList.remove('bg-gray-700', 'text-yellow-400');
+          micBtn.classList.add('bg-red-600', 'text-white', 'animate-pulse');
+          micBtn.title = "Stop Recording";
+
+        } catch (err) {
+          console.error("Mic error:", err);
+          alert("Could not access microphone.");
+        }
+      } else {
+        // Stop recording
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        isRecording = false;
+
+        // UI updates
+        micBtn.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
+        micBtn.classList.add('bg-gray-700', 'text-yellow-400');
+        micBtn.title = "Start Live Recording";
+
+        // 3. Stop session & get text
+        if (recId) {
+          const stopRes = await fetch(`/api/asr/live/stop/${recId}`, { method: 'POST' });
+          const stopData = await stopRes.json();
+
+          if (stopData.text) {
+            document.querySelector('input[name="sen"]').value = stopData.text;
+          } else if (stopData.note) {
+            alert(stopData.note);
+          }
+          recId = null;
+        }
+      }
+    });
+  }
+
+  if (videoPlayer && playBtn && playlist.length > 0) {
+    let currentIndex = 0;
+    let isPlaying = false;
+
+    // Preload first video
+    videoPlayer.src = "{{ url_for('static', filename='isl_videos/') }}" + playlist[0];
+
+    function highlightToken(index) {
+      tokenItems.forEach((item, i) => {
+        const dot = item.querySelector('.dot');
+        if (i === index) {
+          item.classList.add('text-cyan-400', 'font-bold', 'scale-110');
+          item.classList.remove('text-gray-300');
+          dot.classList.add('bg-cyan-400');
+          dot.classList.remove('bg-gray-600');
+        } else {
+          item.classList.remove('text-cyan-400', 'font-bold', 'scale-110');
+          item.classList.add('text-gray-300');
+          dot.classList.remove('bg-cyan-400');
+          dot.classList.add('bg-gray-600');
+        }
+      });
+    }
+
+    function playNext() {
+      if (currentIndex >= playlist.length) {
+        isPlaying = false;
+        playText.textContent = "Replay";
+        statusText.textContent = "Finished";
+        currentIndex = 0;
+        return;
+      }
+
+      const filename = playlist[currentIndex];
+      videoPlayer.src = "{{ url_for('static', filename='isl_videos/') }}" + filename;
+
+      highlightToken(currentIndex);
+      statusText.textContent = `Playing: ${tokens[currentIndex]}`;
+
+      videoPlayer.play().catch(e => {
+        console.error("Playback failed", e);
+        isPlaying = false;
+        playText.textContent = "Play";
+      });
+    }
+
+    videoPlayer.onended = () => {
+      currentIndex++;
+      if (isPlaying) {
+        playNext();
+      }
+    };
+
+    playBtn.addEventListener('click', () => {
+      if (!isPlaying) {
+        isPlaying = true;
+        playText.textContent = "Pause";
+        if (currentIndex === 0 || currentIndex >= playlist.length) {
+          currentIndex = 0;
+          playNext();
+        } else {
+          videoPlayer.play();
+        }
+      } else {
+        isPlaying = false;
+        videoPlayer.pause();
+        playText.textContent = "Play";
+        statusText.textContent = "Paused";
+      }
+    });
+  }
 </script>
 {% endblock %}
